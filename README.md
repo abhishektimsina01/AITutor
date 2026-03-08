@@ -6,9 +6,9 @@ MAS is a agentic asrchitecture that contains of two roles:-
 The supervisor will supervise the workers agents and the aggregate the result as one.
 
 Here, i will apply many advanced LangGraph topics:- 
-- Supervisor-Workers Architecture(Multi-Agent System) with dynamic routing using 'Command' types
-- Short-term and Long-term memory
-- Many advanced tools like searching tools
+- Supervisor-Workers Architecture(Multi-Agent System) with dynamic routing,
+- Short-term and Long-term memory,
+- Many advanced tools like searching tools,
 - scrapping tools,
 - external APIs as tools, 
 - advanced multi-modal agentic RAG system,
