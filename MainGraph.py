@@ -20,7 +20,7 @@ import os
 import json
 from Structure.BaseModel import sub_goal_schema
 from Structure.TypedDict import State, mapper, llm
-from ResearcherGraph import ResearcherSubGraph
+from SubGraphs.ResearcherGraph import ResearcherSubGraph
 
 # FOR THE SUPERVISOR NODE
 def Supervisor(state : State):
