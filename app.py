@@ -21,11 +21,3 @@ import os
 import json
 
 load_dotenv()
-
-llm = ChatGroq(
-    api_key=os.getenv("api_key"),
-    model="llama-3.3-70b-versatile"
-)
-
-tavily_research_tool = TavilySearch(max_results=3, include_answer= True, search_depth= "advanced", auto_parameters=True)
-tavily_research_tool.invoke({"query" : "What is llm?"})
