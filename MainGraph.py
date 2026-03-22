@@ -16,8 +16,6 @@ import sqlite3
 from langgraph.graph.message import add_messages
 from langgraph.types import Command, Interrupt
 from dotenv import load_dotenv
-import os
-import json
 from Structure.BaseModel import sub_goal_schema
 from Structure.TypedDict import State, mapper, llm
 from SubGraphs.ResearcherGraph import ResearcherSubGraph
@@ -26,32 +24,41 @@ from SubGraphs.ResearcherGraph import ResearcherSubGraph
 def Supervisor(state : State):
     goal = state['goal']
     researcher = state.get('Researcher', {}).get("key_points", [])
-    agent_ids = state.get('agent_id', [])
+    task_specific = state.get('Materials', {}).get("sub_goal", [])
+    agent_ids = state.get('agent_ids', [])
     record = {}
     for agent_id in mapper:
         if agent_id in agent_ids:
-            record[agent_id] = "used"
+            record[mapper[agent_id]] = "occupied"
+        else:
+            record[mapper[agent_id]] = "free"
 
+    print(record)
     print("Already used agents :", agent_ids)
     print(goal)
     print(researcher)
     prompt = ChatPromptTemplate([
-        ('system', """You are a supervisor agent for an AI Tutor and you have a bunch of specialized agents:\n\n
+        ('system', 
+         """You are a supervisor agent for an AI Tutor and you have a bunch of specialized agents\n
+
          ****Specialized agents(worker agents) id and their speciality****
          1 --> Researcher : Research on the topics (research that required llm knowledge and research tools)
+         3 --> Materials : Task Specific works like if have to make a roadmap or interview/academic/practice type question answers or study helping flashcards
          5 --> END : If no any agents is required now.\n\n
         
-         Now you have to choose one of the above agents based upon the user query and agent specialization/use. \n\n
+         Now, you can get a goal that may require multiple agents to achieve the goal, so only provide the goal the agent is made for. You have to choose one of the above agents based upon the user query and agent specialization/use. \n\n
 
          ****Specialized agents(worker agents) name and their work till now*****
          Researcher : {researcher_work}
+         Materials : {task_specific_work}
          
          Very important Note : If there is [] with no elements in any of the agent, that means the agent hasn't been used yet. \n\n
          
          ****Agents state****
          {record}
 
-         "used" cannot be used again
+         "free" can be used again
+         "occupied" are not accessible
          ****Structure****
     
          To provide the specific agent you have to return the goal in the following structure\n
@@ -67,15 +74,16 @@ def Supervisor(state : State):
 
          """),
         ('human', "Goal/Query from user : {goal}")
-    ]).partial(format = sub_goal_schema.get_format_instructions(), researcher_work  = researcher, record = record)
+    ]).partial(format = sub_goal_schema.get_format_instructions(), researcher_work  = researcher, task_specific_work = task_specific, record = record)
     print("⚠️"*50)
     print(prompt.invoke({'goal' : goal}))
     print("⚠️"*50)
     # Generate the title for it
     chain = prompt | llm | sub_goal_schema
     response = chain.invoke({'goal' : goal})
-    print('Supervisor Completed ✅')
     print(type(response.id))
+    print("next agent ---> ", response.id)
+    print('Supervisor Completed ✅')
     return {'agent_ids' : [response.id], response.agent : {'sub_goal' : response.sub_goal}}
 
 # FOR THE RESEARCH NODE
@@ -119,7 +127,8 @@ def Synthesizer(state : State):
     # At last synthesize the whole blog/goal that are broken down and submitted to all the agents into one single organized form
 
 def AgentSelection(state : State):
-    agent_id = state['agent_id'][-1]
+    print("AGENT IDS", state.get("agent_ids"), [])
+    agent_id = state['agent_ids'][-1]
     print("agent id",type(agent_id))
     print("next ---->", agent_id)
     if agent_id == 1:
@@ -127,11 +136,12 @@ def AgentSelection(state : State):
     elif agent_id == 2: 
         return "RAG"
     elif agent_id == 3:
-        return "TaskSpecific"
+        return "Materials"
     elif agent_id == 4:
         return "YoutubeAgent"
     else:
         return "Synthesizer"
+
 
 graph = StateGraph(State)
 graph.add_node("Supervisor", Supervisor)
