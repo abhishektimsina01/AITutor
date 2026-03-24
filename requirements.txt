@@ -24,3 +24,4 @@ youtube-transcript-api
 chromadb
 tavily
 langchain-nvidia-ai-endpoints
+yt-dlp
